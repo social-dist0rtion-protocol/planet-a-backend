@@ -1,14 +1,10 @@
 {
-  "0x123": {
+  "49156": {
     "name": "United States of Ambrosia",
     "color": "#ff0000"
   },
-  "0x456": {
+  "49155": {
     "name": "United States of Balloons",
     "color": "#00ff00"
-  },
-  "0x789": {
-    "name": "United States of Chlamydia",
-    "color": "ffdd00"
   }
 }

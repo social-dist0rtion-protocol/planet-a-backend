@@ -11,9 +11,9 @@ export type Country = {
 };
 
 export type LeaderboardResponse = {
+  lastUpdate: number;
   players: { [id: string]: Player };
-  trees: Array<[string, number]>;
-  emissions: Array<[string, number]>;
-  emissionHistory: { [countryId: string]: [string, number] };
-  treeHistory: { [countryId: string]: [string, number] };
+  trees: Array<[string, string]>;
+  emissions: Array<[string, string]>;
+  netCO2History: { [countryId: string]: Array<[string, string]> };
 };

@@ -1,5 +1,6 @@
 import express from "express";
 import redis from "redis";
+import cors from "cors";
 import { promisify } from "util";
 import { LeaderboardResponse, Country } from "./types";
 import countryList from "./countries.json";
@@ -26,6 +27,7 @@ setInterval(function() {
 const getAsync = promisify(r.get).bind(r);
 
 const app = express();
+app.use(cors());
 const port = 8080 || process.env.PORT;
 
 app.get("/", (_, res) => {
@@ -35,12 +37,13 @@ app.get("/", (_, res) => {
 app.get("/stats", async (req, res) => {
   const { query } = req;
   const lastUpdate = parseInt((await getAsync("lastupdate")) || "0", 10);
-  if (query.from && typeof query.from === "number") {
-    if (parseInt(query.from, 10) >= lastUpdate) {
-      res.statusMessage = "Not modified";
-      res.status(304).end();
-      return;
-    }
+  const from =
+    (typeof query.from === "string" && parseInt(query.from, 10)) || 0;
+  if (from >= lastUpdate) {
+    res.statusMessage = "Not modified";
+    res.status(304).end();
+    console.log("304");
+    return;
   }
   const multi = r
     .multi()
@@ -63,27 +66,16 @@ app.get("/stats", async (req, res) => {
       10
     );
 
-  Object.keys(allCountries).forEach(id => {
-    multi.zrangebyscore(
-      `history:co2:${id}`,
-      query.from || 0,
-      "+inf",
-      "withscores"
-    );
-    multi.zrangebyscore(
-      `history:trees:${id}`,
-      query.from || 0,
-      "+inf",
-      "withscores"
-    );
-  });
+  Object.keys(allCountries).forEach(id =>
+    multi.zrangebyscore(`history:netco2:${id}`, from, "+inf", "withscores")
+  );
 
   multi.exec((_, replies) => {
-    res.send(parseRedisResponse(replies));
+    res.send(parseRedisResponse(replies, lastUpdate));
   });
 });
 
-const parseZrange = (response: any[]) =>
+const parseZrange = (response: any[] = []) =>
   response.reduce(
     (prev, current, i) => {
       if (i % 2) {
@@ -92,10 +84,13 @@ const parseZrange = (response: any[]) =>
       } else prev.push([current]);
       return prev;
     },
-    [] as Array<[string, number]>
+    [] as Array<[string, string]>
   );
 
-const parseRedisResponse = (replies: any[]): LeaderboardResponse => {
+const parseRedisResponse = (
+  replies: any[],
+  lastUpdate: number
+): LeaderboardResponse => {
   const [emissions, trees] = [0, 1].map(i => parseZrange(replies[i]));
 
   const players: LeaderboardResponse["players"] = {};
@@ -109,20 +104,18 @@ const parseRedisResponse = (replies: any[]): LeaderboardResponse => {
     }
   });
 
-  const emissionHistory: LeaderboardResponse["emissionHistory"] = {};
-  const treeHistory: LeaderboardResponse["treeHistory"] = {};
+  const netCO2History: LeaderboardResponse["netCO2History"] = {};
 
   Object.keys(allCountries).forEach((id, i) => {
-    emissionHistory[id] = parseZrange(replies[2 + i * 2]);
-    treeHistory[id] = parseZrange(replies[3 + i * 2]);
+    netCO2History[id] = parseZrange(replies[2 + i]);
   });
 
   return {
+    lastUpdate,
     players,
     emissions,
     trees,
-    emissionHistory,
-    treeHistory
+    netCO2History
   };
 };
 
