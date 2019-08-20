@@ -1,10 +1,10 @@
+import cors from "cors";
 import express from "express";
 import redis from "redis";
-import cors from "cors";
 import { promisify } from "util";
-import { LeaderboardResponse, Country } from "./types";
 import countryList from "./countries.json";
 import playerList from "./players.json";
+import { Country, LeaderboardResponse } from "./types";
 
 const allPlayers: LeaderboardResponse["players"] = playerList;
 const allCountries = Object.entries(countryList).reduce(
@@ -16,10 +16,10 @@ const allCountries = Object.entries(countryList).reduce(
 );
 
 const r = redis.createClient({ db: 1 });
-r.on("error", err => console.log(`error: ${err}`));
+r.on("error", (err) => console.log(`error: ${err}`));
 
 // keep the connection up
-setInterval(function() {
+setInterval(() => {
   console.log("redisClient => Sending Ping...");
   r.ping();
 }, 60000); // 60 seconds
@@ -66,7 +66,7 @@ app.get("/stats", async (req, res) => {
       10
     );
 
-  Object.keys(allCountries).forEach(id =>
+  Object.keys(allCountries).forEach((id) =>
     multi.zrangebyscore(`history:netco2:${id}`, from, "+inf", "withscores")
   );
 
@@ -81,7 +81,9 @@ const parseZrange = (response: any[] = []) =>
       if (i % 2) {
         const a = prev[prev.length - 1];
         a.push(current);
-      } else prev.push([current]);
+      } else {
+        prev.push([current]);
+      }
       return prev;
     },
     [] as Array<[string, string]>
@@ -91,7 +93,7 @@ const parseRedisResponse = (
   replies: any[],
   lastUpdate: number
 ): LeaderboardResponse => {
-  const [emissions, trees] = [0, 1].map(i => parseZrange(replies[i]));
+  const [emissions, trees] = [0, 1].map((i) => parseZrange(replies[i]));
 
   const players: LeaderboardResponse["players"] = {};
 

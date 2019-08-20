@@ -6,9 +6,10 @@
   "scripts": {
     "prebuild": "tslint -c tslint.json -p tsconfig.json --fix",
     "build": "tsc",
-    "prestart": "npm run build",
-    "start": "node .",
+    "start": "node dist/index.js",
+    "updater": "node dist/updater.js",
     "dev": "ts-node-dev src/index.ts",
+    "dev-updater": "ts-node-dev src/updater.ts",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [],
@@ -17,7 +18,9 @@
   "dependencies": {
     "cors": "^2.8.5",
     "express": "^4.17.1",
-    "redis": "^2.8.0"
+    "leap-core": "^0.32.4",
+    "redis": "^2.8.0",
+    "web3": "1.0.0-beta.37"
   },
   "devDependencies": {
     "@types/cors": "^2.8.6",
