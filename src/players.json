@@ -1,0 +1,10 @@
+{
+  "michele": {
+    "name": "MB",
+    "event": "eth"
+  },
+  "alberto": {
+    "name": "AG",
+    "event": "ccc"
+  }
+}
