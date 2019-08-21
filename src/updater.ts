@@ -133,8 +133,6 @@ const getLeaderboard = async () => {
       e.push(country, co2);
       t.push(country, countryTrees);
     });
-    console.log(e);
-    console.log(t);
     multi.hmset("countries:co2", e);
     multi.hmset("countries:trees", t);
     multi.set("laststate", JSON.stringify(newState));
@@ -153,7 +151,7 @@ const getLeaderboard = async () => {
     .sort((p1, p2) => (p1.co2 > p2.co2 ? -1 : p1.co2 === p2.co2 ? 0 : 1))
     .map(p => [p.address, p.co2] as [string, number]);
 
-  return { emissions, trees, emissionsByCountry, treesByCountry };
+  return { updated, emissions, trees, emissionsByCountry, treesByCountry };
 };
 
 const run = async () => {
@@ -169,14 +167,12 @@ export const handler = async (event: any = {}) => {
   return true;
 };
 
-run()
-  .then(o => console.log(o))
-  .catch(e => console.error(e));
+const update = () =>
+  run()
+    .then(o =>
+      console.log(`Stats ${(o.updated && "") || "not "}updated to redis`)
+    )
+    .catch(e => console.error(e));
 
-setInterval(
-  () =>
-    run()
-      .then(o => console.log(o))
-      .catch(e => console.error(e)),
-  10000
-);
+update();
+setInterval(update, 10000);
