@@ -1,12 +1,10 @@
 import cors from "cors";
-import express from "express";
+import express, { Response } from "express";
 import redis from "redis";
 import { promisify } from "util";
 import countryList from "./countries.json";
-import playerList from "./players.json";
 import { Country, LeaderboardResponse } from "./types";
 
-const allPlayers: LeaderboardResponse["players"] = playerList;
 const allCountries = Object.entries(countryList).reduce(
   (prev, [id, country]) => {
     prev[id] = { ...country, id };
@@ -16,7 +14,7 @@ const allCountries = Object.entries(countryList).reduce(
 );
 
 const r = redis.createClient({ db: 1 });
-r.on("error", (err) => console.log(`error: ${err}`));
+r.on("error", err => console.log(`error: ${err}`));
 
 // keep the connection up
 setInterval(() => {
@@ -66,12 +64,12 @@ app.get("/stats", async (req, res) => {
       10
     );
 
-  Object.keys(allCountries).forEach((id) =>
+  Object.keys(allCountries).forEach(id =>
     multi.zrangebyscore(`history:netco2:${id}`, from, "+inf", "withscores")
   );
 
   multi.exec((_, replies) => {
-    res.send(parseRedisResponse(replies, lastUpdate));
+    parseRedisResponse(res, replies, lastUpdate);
   });
 });
 
@@ -90,21 +88,11 @@ const parseZrange = (response: any[] = []) =>
   );
 
 const parseRedisResponse = (
+  res: Response,
   replies: any[],
   lastUpdate: number
-): LeaderboardResponse => {
-  const [emissions, trees] = [0, 1].map((i) => parseZrange(replies[i]));
-
-  const players: LeaderboardResponse["players"] = {};
-
-  emissions.forEach(([address]: [string]) => {
-    players[address] = allPlayers[address];
-  });
-  trees.forEach(([address]: [string]) => {
-    if (!(address in players)) {
-      players[address] = allPlayers[address];
-    }
-  });
+) => {
+  const [emissions, trees] = [0, 1].map(i => parseZrange(replies[i]));
 
   const netCO2History: LeaderboardResponse["netCO2History"] = {};
 
@@ -112,13 +100,38 @@ const parseRedisResponse = (
     netCO2History[id] = parseZrange(replies[2 + i]);
   });
 
-  return {
-    lastUpdate,
-    players,
-    emissions,
-    trees,
-    netCO2History
-  };
+  const multi = r.multi();
+
+  const fetchPlayers: { [address: string]: boolean } = {};
+
+  emissions.forEach(([address]: [string]) => {
+    fetchPlayers[address] = true;
+  });
+  trees.forEach(([address]: [string]) => {
+    fetchPlayers[address] = true;
+  });
+
+  const addressesToFetch = Object.keys(fetchPlayers);
+
+  addressesToFetch.forEach(address => multi.hgetall(`player:${address}`));
+
+  multi.exec((_, playersFromRedis) =>
+    res.send({
+      lastUpdate,
+      players: playersFromRedis
+        .map(p => p || { name: "Mr. Mysterious", countryId: "unknown" })
+        .reduce(
+          (prev, current, i) => {
+            prev[addressesToFetch[i]] = current;
+            return prev;
+          },
+          {} as LeaderboardResponse["players"]
+        ),
+      emissions,
+      trees,
+      netCO2History
+    })
+  );
 };
 
 app.listen(port, () => {

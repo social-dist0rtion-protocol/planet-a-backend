@@ -1,13 +1,14 @@
 export type Player = {
   avatar?: string;
   name: string;
-  event: string;
+  countryId?: string;
 };
 
 export type Country = {
   id: string;
   name: string;
   color: string;
+  event: string;
 };
 
 export type LeaderboardResponse = {

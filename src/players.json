@@ -1,14 +1,11 @@
 {
   "michele": {
-    "name": "MB",
-    "event": "eth"
+    "name": "MB"
   },
   "alberto": {
-    "name": "AG",
-    "event": "ccc"
+    "name": "AG"
   },
   "0x197970e48082cd46f277abdb8afe492bccd78300": {
-    "name": "Albertissimo",
-    "event": "ccc"
+    "name": "Albertissimo"
   }
 }

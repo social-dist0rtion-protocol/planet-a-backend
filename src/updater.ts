@@ -3,6 +3,9 @@ import redis from "redis";
 import { promisify } from "util";
 import Web3 from "web3";
 import countryList from "./countries.json";
+import playerList from "./players.json";
+
+const playerNames: { [address: string]: { name: string } } = playerList;
 
 const countries: {
   [id: string]: { name: string; color: string };
@@ -107,6 +110,16 @@ const getLeaderboard = async () => {
     if (!last || last.trees !== passport.trees) {
       updated = true;
       multi.zadd("leaders:trees", passport.trees, passport.address);
+    }
+    if (!last || last.country !== passport.country) {
+      updated = true;
+      multi.hmset(
+        `player:${address}`,
+        "countryId",
+        passport.country,
+        "name",
+        (playerNames[address] || { name: "Mr. Mysterious" }).name
+      );
     }
   });
 
