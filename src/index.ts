@@ -62,7 +62,9 @@ app.get("/stats", async (req, res) => {
       "limit",
       0,
       10
-    );
+    )
+    .hgetall("countries:co2")
+    .hgetall("countries:trees");
 
   Object.keys(allCountries).forEach(id =>
     multi.zrangebyscore(`history:netco2:${id}`, from, "+inf", "withscores")
@@ -93,11 +95,12 @@ const parseRedisResponse = (
   lastUpdate: number
 ) => {
   const [emissions, trees] = [0, 1].map(i => parseZrange(replies[i]));
+  const [co2ByCountry, treesByCountry] = [replies[2], replies[3]];
 
   const netCO2History: LeaderboardResponse["netCO2History"] = {};
 
   Object.keys(allCountries).forEach((id, i) => {
-    netCO2History[id] = parseZrange(replies[2 + i]);
+    netCO2History[id] = parseZrange(replies[4 + i]);
   });
 
   const multi = r.multi();
@@ -129,7 +132,9 @@ const parseRedisResponse = (
         ),
       emissions,
       trees,
-      netCO2History
+      netCO2History,
+      co2ByCountry,
+      treesByCountry
     })
   );
 };

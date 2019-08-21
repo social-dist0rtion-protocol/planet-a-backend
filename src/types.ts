@@ -17,4 +17,6 @@ export type LeaderboardResponse = {
   trees: Array<[string, string]>;
   emissions: Array<[string, string]>;
   netCO2History: { [countryId: string]: Array<[string, string]> };
+  co2ByCountry: { [countryId: string]: string };
+  treesByCountry: { [countryId: string]: string };
 };

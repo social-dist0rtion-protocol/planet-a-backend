@@ -125,13 +125,18 @@ const getLeaderboard = async () => {
 
   if (updated) {
     multi.set("lastupdate", now);
-    Object.entries(emissionsByCountry).forEach(([country, co2]) =>
-      multi.zadd(
-        `history:netco2:${country}`,
-        now,
-        co2 - (treesByCountry[country] || 0)
-      )
-    );
+    const e: Array<string | number> = [];
+    const t: Array<string | number> = [];
+    Object.entries(emissionsByCountry).forEach(([country, co2]) => {
+      const countryTrees = treesByCountry[country] || 0;
+      multi.zadd(`history:netco2:${country}`, now, co2 - countryTrees);
+      e.push(country, co2);
+      t.push(country, countryTrees);
+    });
+    console.log(e);
+    console.log(t);
+    multi.hmset("countries:co2", e);
+    multi.hmset("countries:trees", t);
     multi.set("laststate", JSON.stringify(newState));
     multi.exec();
   }
