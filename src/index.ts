@@ -37,7 +37,7 @@ app.get("/stats", async (req, res) => {
   const lastUpdate = parseInt((await getAsync("lastupdate")) || "0", 10);
   const from =
     (typeof query.from === "string" && parseInt(query.from, 10)) || 0;
-  if (from >= lastUpdate) {
+  if (from > 0 && from >= lastUpdate) {
     res.statusMessage = "Not modified";
     res.status(304).end();
     console.log("304");
@@ -45,19 +45,11 @@ app.get("/stats", async (req, res) => {
   }
   const multi = r
     .multi()
-    .zrevrangebyscore(
-      "leaders:co2",
-      "+inf",
-      "-inf",
-      "withscores",
-      "limit",
-      0,
-      10
-    )
+    .zrevrangebyscore("leaders:co2", "+inf", "1", "withscores", "limit", 0, 10)
     .zrevrangebyscore(
       "leaders:trees",
       "+inf",
-      "-inf",
+      "1",
       "withscores",
       "limit",
       0,
