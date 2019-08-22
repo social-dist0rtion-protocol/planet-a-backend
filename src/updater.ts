@@ -121,9 +121,9 @@ const getLeaderboard = () =>
         .map(p =>
           p
             .value!.map(u => u.output)
-            .filter(o => countries[o.color])
+            .filter(o => countries[o.color] && playerNames[o.value])
             .map(o => ({
-              address: o.address.toLowerCase(),
+              address: o.value,
               country: o.color.toString(),
               co2: parseCO2(o.data!),
               trees: parseTrees(o.data!)
