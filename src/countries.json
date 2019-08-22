@@ -4,6 +4,7 @@
     "name": "United States of Ambrosia",
     "shortName": "USA",
     "color": "#ffd200",
+    "pattern": "disc",
     "textColor": "#876224",
     "event": "eth2"
   },
@@ -20,6 +21,7 @@
     "name": "Pollutistan",
     "shortName": "PLAN",
     "color": "#0000ff",
+    "pattern": "plus",
     "textColor": "#000065",
     "event": "eth2"
   },

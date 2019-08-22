@@ -67,14 +67,16 @@ app.get("/stats", async (req, res) => {
   });
 });
 
-const parseZrange = (response: any[] = []) =>
+const parseZrange = (response: any[] = [], splitValueAfterColon = false) =>
   response.reduce(
     (prev, current, i) => {
       if (i % 2) {
         const a = prev[prev.length - 1];
         a.push(current);
       } else {
-        prev.push([current]);
+        prev.push([
+          splitValueAfterColon ? (current as string).split(":")[1] : current
+        ]);
       }
       return prev;
     },
@@ -92,7 +94,7 @@ const parseRedisResponse = (
   const netCO2History: LeaderboardResponse["netCO2History"] = {};
 
   Object.keys(allCountries).forEach((id, i) => {
-    netCO2History[id] = parseZrange(replies[4 + i]);
+    netCO2History[id] = parseZrange(replies[4 + i], true);
   });
 
   const multi = r.multi();
@@ -110,10 +112,14 @@ const parseRedisResponse = (
 
   addressesToFetch.forEach(address => multi.hgetall(`player:${address}`));
 
-  multi.exec((_, playersFromRedis) =>
+  multi.get("goe");
+
+  multi.exec((_, goeAndPlayersFromRedis) => {
+    const goeMillisCirculating = parseInt(goeAndPlayersFromRedis.pop(), 10);
     res.send({
       lastUpdate,
-      players: playersFromRedis
+      goeMillisCirculating,
+      players: goeAndPlayersFromRedis
         .map(p => p || { name: "Mr. Mysterious", countryId: "unknown" })
         .reduce(
           (prev, current, i) => {
@@ -127,8 +133,8 @@ const parseRedisResponse = (
       netCO2History,
       co2ByCountry,
       treesByCountry
-    })
-  );
+    });
+  });
 };
 
 app.listen(port, () => {

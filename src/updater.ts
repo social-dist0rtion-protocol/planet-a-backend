@@ -2,7 +2,13 @@ import { ExtendedWeb3, helpers, Unspent } from "leap-core";
 import redis, { Callback } from "redis";
 import Web3 from "web3";
 import countryList from "./countries.json";
+import ierc20 from "./ierc20.json";
 import playerList from "./players.json";
+
+const earthContractAddress = "0xc852eb0925f87ded366410c212a99da5ed9ef413";
+// "0xd87ad15c109ed79c9cbf2058b6d188caaab6a063";
+const totalGoeMillis = 9800000;
+const goeAddress = "0x1f89Fb2199220a350287B162B9D0A330A2D2eFAD";
 
 const playerNames: { [address: string]: { name: string } } = playerList;
 
@@ -67,22 +73,27 @@ type Leaderboard = {
 
 const getLeaderboard = () =>
   new Promise<Leaderboard>(resolve => {
+    console.time("loading state from redis");
+
     getLastStateFromRedis(async (_, replies) => {
       const now = Math.floor(Date.now() / 1000).toString();
 
       const lastState: { [address: string]: Passport } = JSON.parse(
         replies[0] || "{}"
       );
+      console.timeEnd("loading state from redis");
 
       const netCO2Balances = countryIds
         .map((id, i) => [id, replies[i + 1][0] || "0"])
         .reduce(
           (prev, [id, balance]) => {
-            prev[id] = parseInt(balance, 10);
+            prev[id] = parseInt(balance.split(":")[1], 10);
             return prev;
           },
           {} as Leaderboard["emissionsByCountry"]
         );
+
+      console.time("fetching balances for all countries");
 
       const promises: Array<{
         id: string;
@@ -136,6 +147,7 @@ const getLeaderboard = () =>
         },
         {} as { [address: string]: Passport }
       );
+      console.timeEnd("fetching balances for all countries");
 
       const multi = r.multi();
       let updated = false;
@@ -176,6 +188,8 @@ const getLeaderboard = () =>
       });
 
       if (updated) {
+        const goeBalance = await getGOEBalance();
+        console.time("updating state on redis");
         multi.set("lastupdate", now);
         const e: Array<string | number> = [];
         const t: Array<string | number> = [];
@@ -188,7 +202,7 @@ const getLeaderboard = () =>
                 netCO2Balances[country]
               }, and now is ${netCO2}`
             );
-            multi.zadd(`history:netco2:${country}`, now, netCO2);
+            multi.zadd(`history:netco2:${country}`, now, `${now}:${netCO2}`);
           }
           e.push(country, co2);
           t.push(country, countryTrees);
@@ -196,7 +210,8 @@ const getLeaderboard = () =>
         multi.hmset("countries:co2", e);
         multi.hmset("countries:trees", t);
         multi.set("laststate", JSON.stringify(newState));
-        multi.exec();
+        multi.set("goe", goeBalance.toString());
+        multi.exec(() => console.timeEnd("updating state on redis"));
       }
 
       const trees = Object.values(newState)
@@ -221,22 +236,35 @@ const getLeaderboard = () =>
     });
   });
 
-const run = () => {
-  web3 = helpers.extendWeb3(new Web3(web3URL));
-  return getLeaderboard();
+const getGOEBalance = async () => {
+  console.time("fetching goe balance for earth contract");
+  const balance = await earthContract.methods
+    .balanceOf(earthContractAddress)
+    .call()
+    .catch(e => console.log(e));
+  console.timeEnd("fetching goe balance for earth contract");
+  return (
+    totalGoeMillis - parseInt((balance || "0000000000000000").slice(0, -15), 10)
+  );
 };
 
 export const handler = async (event: any = {}) => {
   console.log("launched!");
-  const leaderboard = run();
-  console.log(JSON.stringify(leaderboard, null, 2));
+  getLeaderboard().then(leaderboard =>
+    console.log(JSON.stringify(leaderboard, null, 2))
+  );
   return true;
 };
 
 const update = () =>
-  run()
+  getLeaderboard()
     .then(o => console.log(`Stats ${o.updated ? "" : "not "}updated to redis`))
     .catch(e => console.error(e));
+
+console.time("initializing goe contract");
+web3 = helpers.extendWeb3(new Web3(web3URL));
+const earthContract = new web3.eth.Contract(ierc20, goeAddress);
+console.timeEnd("initializing goe contract");
 
 update();
 setInterval(update, 10000);

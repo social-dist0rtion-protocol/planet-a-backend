@@ -1597,10 +1597,10 @@ keccakjs@^0.2.1:
     browserify-sha3 "^0.0.4"
     sha3 "^1.2.2"
 
-leap-core@^0.32.4:
-  version "0.32.4"
-  resolved "https://registry.yarnpkg.com/leap-core/-/leap-core-0.32.4.tgz#d10e98d89f720d9107df44bcb524ad38fadb44fe"
-  integrity sha512-LJmUqsx1kbXimiJVq/i3XxNwEP89bnaYJO8/J4slYJvpPatmfMrI031M7RuZrW1fe+TE60a1PK0FKhsNnaPbtA==
+leap-core@^0.34.2:
+  version "0.34.2"
+  resolved "https://registry.yarnpkg.com/leap-core/-/leap-core-0.34.2.tgz#24c78de02c1a7730d15beaac0a363980a8850e7a"
+  integrity sha512-gHzSJ+tYvnRCiY3WfK8oP8SjQ4xTh1EFPxQbm6+5kTGuDBTzWD/LhOHiRZ+s3/9IpkiCPppu/9Ae+DBjUnPxhg==
   dependencies:
     "@types/web3" "^1.0.18"
     ethereumjs-util "6.0.0"
