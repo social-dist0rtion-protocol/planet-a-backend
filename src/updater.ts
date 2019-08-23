@@ -6,9 +6,9 @@ import ierc20 from "./ierc20.json";
 import playerList from "./players.json";
 
 const earthContractAddress = "0xc4d29082e675681cc3c5e02dd9f264e71603b70d";
-// "0xd87ad15c109ed79c9cbf2058b6d188caaab6a063";
-const totalGoeMillis = 9800000;
+const totalGoeMillis = 50600000;
 const goeAddress = "0x1f89Fb2199220a350287B162B9D0A330A2D2eFAD";
+const initialCO2PerCountryMt = 500000;
 
 const playerNames: { [address: string]: { name: string } } = playerList;
 
@@ -37,10 +37,15 @@ const parseTrees = (data: string) =>
 const parseCO2 = (data: string) =>
   Web3.utils.hexToNumber(`0x${data.substring(58, 66)}`);
 
-const sumByCountry = (passports: Passport[], field: "co2" | "trees") =>
+const sumByCountry = (
+  passports: Passport[],
+  field: "co2" | "trees",
+  addToEach = 0
+) =>
   passports.reduce(
     (prev, current) => {
-      prev[current.country] = (prev[current.country] || 0) + current[field];
+      prev[current.country] =
+        (prev[current.country] || addToEach) + current[field];
       return prev;
     },
     {} as { [countryId: string]: number }
@@ -137,7 +142,11 @@ const getLeaderboard = () =>
           [] as Passport[]
         );
 
-      const emissionsByCountry = sumByCountry(passports, "co2");
+      const emissionsByCountry = sumByCountry(
+        passports,
+        "co2",
+        initialCO2PerCountryMt
+      );
       const treesByCountry = sumByCountry(passports, "trees");
 
       const newState = passports.reduce(
@@ -248,8 +257,15 @@ const getGOEBalance = async () => {
   );
 };
 
+// drrrrrrrrrrrrrrty, but produces a nice localized yyyy-MM-dd HH:mm:ss format
+const localDateTime = () =>
+  new Date(`${new Date()} UTC`)
+    .toISOString()
+    .slice(0, 19)
+    .replace("T", " ");
+
 export const handler = async (event: any = {}) => {
-  console.log("launched!");
+  console.log(`[${localDateTime()}] launched!`);
   getLeaderboard().then(leaderboard =>
     console.log(JSON.stringify(leaderboard, null, 2))
   );
@@ -258,7 +274,11 @@ export const handler = async (event: any = {}) => {
 
 const update = () =>
   getLeaderboard()
-    .then(o => console.log(`Stats ${o.updated ? "" : "not "}updated to redis`))
+    .then(o =>
+      console.log(
+        `[${localDateTime()}] Stats ${o.updated ? "" : "not "}updated to redis`
+      )
+    )
     .catch(e => console.error(e));
 
 console.time("initializing goe contract");
