@@ -5,7 +5,7 @@ import countryList from "./countries.json";
 import ierc20 from "./ierc20.json";
 import playerList from "./players.json";
 
-const earthContractAddress = "0xc852eb0925f87ded366410c212a99da5ed9ef413";
+const earthContractAddress = "0xc4d29082e675681cc3c5e02dd9f264e71603b70d";
 // "0xd87ad15c109ed79c9cbf2058b6d188caaab6a063";
 const totalGoeMillis = 9800000;
 const goeAddress = "0x1f89Fb2199220a350287B162B9D0A330A2D2eFAD";
