@@ -9,7 +9,7 @@ A simple node.js backend to update stats to, and to serve stats from redis to [P
 
 ## What's not in here
 
-The client itself, which is hosted [as a separate repo](https://github.com/social-dist0rtion-protocol/planet-a-dashboard) and is served [via github.io](https://social-dist0rtion-protocol.github.io/planet-a-dashboard).
+The client itself, which is hosted [as a separate repo](https://github.com/social-dist0rtion-protocol/planet-a-dashboard) and is served [via github.io](https://planet-a.github.io/).
 
 ## Dependencies
 
